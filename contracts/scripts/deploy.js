@@ -1,0 +1,95 @@
+const { ethers } = require("hardhat");
+const fs = require("fs");
+const path = require("path");
+
+// Up to 0.5% per day, no payout cap (DRIP-style). The faucet's real ceiling is
+// liquidity: claims are only paid from DRIPH the faucet actually holds, and the
+// reward rate dials back automatically when the reserve thins. Both 10% taxes
+// stay in the faucet as backing instead of leaving to wallets.
+const DAILY_RATE_WAD = ethers.parseUnits("0.005", 18);
+const DEPOSIT_TAX_BPS = 1000;   // 10% - stays in the pool as backing
+const WITHDRAW_TAX_BPS = 1000;  // 10% - stays in the pool as backing
+
+async function main() {
+  const [deployer, localTreasury] = await ethers.getSigners();
+  const chainId = Number((await ethers.provider.getNetwork()).chainId);
+  const isLocal = chainId === 1337;
+
+  const requestedAddresses = {
+    treasuryAddress: process.env.TREASURY_ADDRESS || (isLocal ? localTreasury.address : null),
+    ownerAddress: process.env.OWNER_ADDRESS || (isLocal ? deployer.address : null),
+    supplyRecipient: process.env.SUPPLY_RECIPIENT_ADDRESS || (isLocal ? deployer.address : null),
+  };
+
+  for (const [name, address] of Object.entries(requestedAddresses)) {
+    if (!address || !ethers.isAddress(address) || address === ethers.ZeroAddress) {
+      throw new Error(`${name} must be an explicit non-zero address`);
+    }
+  }
+  const treasuryAddress = ethers.getAddress(requestedAddresses.treasuryAddress);
+  const ownerAddress = ethers.getAddress(requestedAddresses.ownerAddress);
+  const supplyRecipient = ethers.getAddress(requestedAddresses.supplyRecipient);
+
+  console.log(`Deploying Drip H from ${deployer.address} (chainId ${chainId})`);
+
+  const token = await (await ethers.getContractFactory("DripHToken")).deploy(treasuryAddress);
+  await token.waitForDeployment();
+  const tokenAddr = await token.getAddress();
+
+  const faucet = await (
+    await ethers.getContractFactory("DripHFaucet")
+  ).deploy(tokenAddr, DAILY_RATE_WAD, DEPOSIT_TAX_BPS, WITHDRAW_TAX_BPS);
+  await faucet.waitForDeployment();
+  const faucetAddr = await faucet.getAddress();
+
+  // The faucet moves DRIPH internally for stakes, claims and fee splits - exempt it.
+  await (await token.setExcluded(faucetAddr, true)).wait();
+  await (await token.lockExclusion(faucetAddr)).wait();
+
+  console.log(`DripHToken  -> ${tokenAddr}`);
+  console.log(`DripHFaucet -> ${faucetAddr}`);
+  console.log(`base rate      -> up to 0.5%/day (${ethers.formatUnits(DAILY_RATE_WAD, 18)} wad/day, dynamic)`);
+  console.log(`payout cap    -> none`);
+  console.log(`taxes          -> deposit+withdraw 10% each, kept in the pool as backing`);
+  console.log(`transfer fee   -> 2.5% to treasury (${treasuryAddress})`);
+
+  // Optional: seed tokens into the faucet so claims work out of the box.
+  const seedAmount = process.env.SEED_DRIPH ? ethers.parseEther(process.env.SEED_DRIPH) : 0n;
+  if (seedAmount > 0n) {
+    await (await token.transfer(faucetAddr, seedAmount)).wait();
+    await (await faucet.syncDonations()).wait();
+    console.log(`seeded faucet with ${ethers.formatEther(seedAmount)} DRIPH`);
+  }
+
+  const deployerBalance = await token.balanceOf(deployer.address);
+  if (supplyRecipient !== deployer.address && deployerBalance > 0n) {
+    await (await token.transfer(supplyRecipient, deployerBalance)).wait();
+    console.log(`transferred remaining supply to ${supplyRecipient}`);
+  }
+
+  if (ownerAddress !== deployer.address) {
+    await (await token.transferOwnership(ownerAddress)).wait();
+    console.log(`ownership acceptance pending for ${ownerAddress}`);
+  }
+
+  if ((await faucet.token()) !== tokenAddr || !(await token.isExcluded(faucetAddr)) || !(await token.exclusionLocked(faucetAddr))) {
+    throw new Error("deployment postcondition failed");
+  }
+
+  if (chainId === 4663 || chainId === 46630) {
+    const out = path.join(__dirname, "..", "..", "client", "src", "lib", "deployed-address.json");
+    let manifest = { deployments: {} };
+    if (fs.existsSync(out)) {
+      const current = JSON.parse(fs.readFileSync(out, "utf8"));
+      if (current.deployments) manifest = current;
+    }
+    manifest.deployments[String(chainId)] = { token: tokenAddr, faucet: faucetAddr };
+    fs.writeFileSync(out, JSON.stringify(manifest, null, 2));
+    console.log(`wrote addresses to ${out}`);
+  }
+}
+
+main().catch((e) => {
+  console.error(e);
+  process.exitCode = 1;
+});
