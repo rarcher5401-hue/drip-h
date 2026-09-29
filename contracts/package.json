@@ -9,7 +9,8 @@
     "node": "hardhat node",
     "smoke:local": "hardhat run scripts/smoke-local.js",
     "deploy:testnet": "hardhat run scripts/deploy.js --network robinhoodTestnet",
-    "deploy:mainnet": "hardhat run scripts/deploy.js --network robinhood"
+    "deploy:mainnet": "hardhat run scripts/deploy.js --network robinhood",
+    "deploy:pons": "hardhat run scripts/deploy.js --network robinhood"
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-chai-matchers": "^2.1.2",

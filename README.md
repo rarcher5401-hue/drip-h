@@ -25,7 +25,7 @@ token has been reserved.
 ## How the faucet works
 
 1. Connect a wallet (any EVM wallet; the app auto-adds Robinhood Chain).
-2. Get **DRIPH** (1,000,000 minted to the deployer at launch).
+2. Get **DRIPH** (1,000,000 minted to the deployer at launch, or the 1,000,000,000 fixed supply from the Pons launch on mainnet).
 3. **Deposit** DRIPH - a 10% deposit tax stays in the faucet as backing; the remaining 90% becomes your earning principal.
 4. The faucet accrues **up to 0.5% of principal per day** (per-second, exact compounding; dialed down automatically when the reserve thins).
 5. **Compound** (re-invest into principal - no payout ceiling, so it keeps growing) or **Claim** (send rewards to your wallet - requires the faucet to hold liquidity).
@@ -103,11 +103,33 @@ $env:SEED_DRIPH = "10000"; npm.cmd run deploy:testnet
 
 Mainnet: `npm run deploy:mainnet`.
 
+### 2b. Deploy against a Pons-launched token (Robinhood mainnet)
+
+1. Launch **DRIPH** on Pons (`https://www.ponsfamily.com/launchpad/create`): fixed 1,000,000,000
+   supply, paired with WETH, 0.0005 ETH launch fee. Set **creator tax to 2.5%** with your dev
+   wallet (`0x5A96c8952F00d1fabd3D1c6F09Fb4378c0ACB8c5`) as the creator wallet.
+2. Make a developer buy so you hold DRIPH for the initial faucet reserve.
+3. Deploy only the faucet against the Pons token address (mainnet refuses to deploy a second
+   custom token unless `ALLOW_CUSTOM_TOKEN=true`):
+
+```powershell
+# PowerShell
+$env:PRIVATE_KEY = "0x..."
+$env:PONS_TOKEN_ADDRESS = "0x..."
+$env:SEED_DRIPH = "20000"
+npm.cmd run deploy:pons
+```
+
+4. Optionally send more DRIPH straight to the faucet contract, then call `syncDonations()`
+   (or use `fundRewards(amount)` after approving the faucet). Never send ETH/WETH to the faucet.
+5. Update the frontend: `VITE_CHAIN_ID=4663`, `VITE_TOKEN_ADDRESS`, `VITE_FAUCET_ADDRESS`.
+
 Verify on Blockscout:
 
 ```bash
 npx hardhat verify --network robinhoodTestnet <TOKEN_ADDRESS> <treasury_address>
 npx hardhat verify --network robinhoodTestnet <FAUCET_ADDRESS> <token> <"5000000000000000000"> <1000> <1000>
+npx hardhat verify --network robinhood <FAUCET_ADDRESS> <pons_token> <"5000000000000000000"> <1000> <1000>
 ```
 
 ### 3. Frontend

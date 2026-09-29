@@ -4,7 +4,7 @@ const STEPS = [
   {
     n: "01",
     title: "Get DRIPH",
-    body: "Staking runs on the DRIPH token. Get it from the deployer/wallet that holds the initial supply (1,000,000 DRIPH minted at launch), or earn it by participating on the testnet.",
+    body: "Staking runs on the DRIPH token: a fixed 1,000,000,000 supply launched on Pons on Robinhood Chain. Buy DRIPH in the Pons pool, then stake it here to start earning.",
   },
   {
     n: "02",

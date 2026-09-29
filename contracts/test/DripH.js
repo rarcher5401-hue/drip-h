@@ -229,3 +229,60 @@ describe("DripHFaucet security accounting", function () {
     await expect(faucet.connect(alice).withdraw(e("10"))).to.be.revertedWith("Drip H: amount");
   });
 });
+
+describe("DripHFaucet with a standard fee-free token (Pons-style)", function () {
+  let token, faucet, owner, alice;
+
+  beforeEach(async function () {
+    [owner, alice] = await ethers.getSigners();
+    token = await (await ethers.getContractFactory("DripHToken")).deploy(owner.address);
+    await token.waitForDeployment();
+    // Simulate a standard ERC20 with no transfer fee and no exclusions.
+    await token.setTransferFeeBps(0);
+
+    faucet = await (
+      await ethers.getContractFactory("DripHFaucet")
+    ).deploy(await token.getAddress(), RATE_PER_DAY, 1000, 1000);
+    await faucet.waitForDeployment();
+
+    await token.transfer(alice.address, e("10000"));
+    await token.connect(alice).approve(await faucet.getAddress(), ethers.MaxUint256);
+  });
+
+  it("rewards are capped by reserve headroom until the pool is seeded", async function () {
+    await faucet.connect(alice).deposit(e("1000"));
+    await warp(30);
+    // No seed funding: only the 100 DRIPH deposit tax backs rewards.
+    expect(await faucet.pendingRewards(alice.address)).to.be.lessThanOrEqual(e("100"));
+  });
+
+  it("deposits, compounds, claims and withdraws with exact transfers", async function () {
+    await token.approve(await faucet.getAddress(), e("1000"));
+    await faucet.fundRewards(e("1000"));
+
+    await faucet.connect(alice).deposit(e("1000"));
+    expect((await faucet.users(alice.address)).principal).to.equal(e("900"));
+
+    await warp(30);
+    const pending = await faucet.pendingRewards(alice.address);
+    expect(pending).to.be.greaterThan(e("130"));
+
+    await faucet.connect(alice).compound();
+    expect((await faucet.users(alice.address)).principal).to.be.greaterThan(e("900"));
+
+    const before = await token.balanceOf(alice.address);
+    await warp(10);
+    await faucet.connect(alice).claim();
+    expect((await token.balanceOf(alice.address)) - before).to.be.greaterThan(0n);
+
+    await faucet.connect(alice).withdraw(e("100"));
+    expect((await faucet.users(alice.address)).principal).to.be.lessThan(e("1000"));
+  });
+
+  it("accepts direct transfers via syncDonations without exclusions", async function () {
+    await token.transfer(await faucet.getAddress(), e("500"));
+    expect(await faucet.syncDonations()).to.not.be.reverted;
+    expect(await faucet.accountedBalance()).to.equal(e("500"));
+    expect(await faucet.rewardHeadroom()).to.equal(e("500"));
+  });
+});
