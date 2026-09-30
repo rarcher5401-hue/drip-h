@@ -97,8 +97,14 @@ export default function Dashboard() {
     if (amount.trim()) refPreview = fmtToken((parseTokenAmount(amount) * BigInt(REFERRAL_BPS)) / 10000n);
   } catch { refPreview = null; }
 
-  // Capture ?ref= links: first valid non-self referrer wins.
+  // Capture ?ref= links: first valid non-self referrer wins. A referrer saved
+  // while disconnected is re-checked on connect so self-referrals can't linger.
   useEffect(() => {
+    if (account && referrer && referrer.toLowerCase() === account.toLowerCase()) {
+      try { localStorage.removeItem(REFERRER_KEY); } catch { /* ignore */ }
+      setReferrer("");
+      return;
+    }
     const q = searchParams.get("ref");
     if (!q || !ethers.isAddress(q) || referrer) return;
     if (account && q.toLowerCase() === account.toLowerCase()) return;
