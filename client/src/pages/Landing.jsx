@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { loadProtocol } from "../lib/chain";
+import ContractLinks from "../components/ContractLinks";
 
 export default function Landing() {
   const [protocol, setProtocol] = useState(null);
@@ -56,15 +57,9 @@ export default function Landing() {
             <Link className="btn btn--ghost btn--lg" to="/how-it-works">
               See the mechanics
             </Link>
-            <a
-              className="btn btn--ghost btn--lg"
-              href={protocol?.ponsUrl ?? "https://www.ponsfamily.com/launchpad"}
-              target="_blank"
-              rel="noreferrer"
-              title={protocol?.ponsUrl ? "Trade DRIPH in its Pons pool" : "Pons launchpad — the DRIPH pool link appears here after launch"}
-            >
-              Buy DRIPH on Pons ↗
-            </a>
+          </div>
+          <div className="hero-contracts">
+            <ContractLinks />
           </div>
           <div className="hero-trust" aria-label="Protocol highlights">
             <span><i /> No lockups</span>

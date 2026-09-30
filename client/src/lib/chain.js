@@ -32,20 +32,6 @@ export const DEFAULT_NETWORK = NETWORKS[4663];
 const ENV_CHAIN_ID = Number(import.meta.env.VITE_CHAIN_ID || 0);
 const ENV_TOKEN_ADDRESS = import.meta.env.VITE_TOKEN_ADDRESS || null;
 const ENV_FAUCET_ADDRESS = import.meta.env.VITE_FAUCET_ADDRESS || null;
-const ENV_PONS_URL = import.meta.env.VITE_PONS_URL || null;
-
-// Pons launches live on Robinhood mainnet only. The buy link is derived from
-// the deployed token address so it can never point at the wrong token.
-const PONS_BASE = "https://www.ponsfamily.com/launchpad";
-
-export function getPonsUrl(chainId) {
-  if (ENV_PONS_URL) return ENV_PONS_URL;
-  const id = Number(chainId ?? DEFAULT_NETWORK.chainId);
-  if (id !== 4663) return null;
-  const deployment = getDeployment(id);
-  if (!deployment) return null;
-  return `${PONS_BASE}/${deployment.token}`;
-}
 
 function validAddress(address) {
   return Boolean(address && ethers.isAddress(address) && address !== ethers.ZeroAddress);
@@ -162,7 +148,6 @@ export async function loadProtocol(chainId) {
     coveragePct: coverage,
     tokenAddress: deployment.token,
     faucetAddress: deployment.faucet,
-    ponsUrl: getPonsUrl(deployment.chainId),
   };
 }
 

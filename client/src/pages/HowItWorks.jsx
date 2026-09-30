@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { getPonsUrl } from "../lib/chain";
+import ContractLinks from "../components/ContractLinks";
 
 const STEPS = [
   {
@@ -94,14 +94,9 @@ export default function HowItWorks() {
             <Link className="btn btn--primary btn--lg" to="/faucet">
               Open the faucet <span aria-hidden="true">→</span>
             </Link>
-            <a
-              className="btn btn--ghost btn--lg"
-              href={getPonsUrl() ?? "https://www.ponsfamily.com/launchpad"}
-              target="_blank"
-              rel="noreferrer"
-            >
-              Buy DRIPH on Pons ↗
-            </a>
+          </div>
+          <div className="how-contracts">
+            <ContractLinks />
           </div>
         </div>
       </section>

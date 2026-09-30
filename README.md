@@ -123,8 +123,8 @@ npm.cmd run deploy:pons
 4. Optionally send more DRIPH straight to the faucet contract, then call `syncDonations()`
    (or use `fundRewards(amount)` after approving the faucet). Never send ETH/WETH to the faucet.
 5. Update the frontend: `VITE_CHAIN_ID=4663`, `VITE_TOKEN_ADDRESS`, `VITE_FAUCET_ADDRESS`.
-   The "Buy DRIPH on Pons" buttons derive their link from the token address automatically
-   (override with `VITE_PONS_URL` if needed).
+   The landing, faucet, and mechanics pages display the token + faucet contract addresses
+   (with copy buttons and explorer links) from that configuration automatically.
 
 Verify on Blockscout:
 

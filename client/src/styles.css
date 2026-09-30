@@ -1097,6 +1097,66 @@ code {
 .ref-stats { grid-template-columns: repeat(3, 1fr); }
 .ref-stats .kv-value { font-size: 1.06rem; }
 
+.hero-contracts { margin-top: 22px; max-width: 560px; }
+
+.how-contracts {
+  display: flex;
+  justify-content: center;
+  margin-top: 26px;
+}
+
+.how-contracts .contract-links { min-width: min(560px, 100%); }
+
+.contract-block {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 4px;
+  border-top: 1px solid var(--border);
+}
+
+.contract-links {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.contract-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 2px 12px 2px 12px;
+  font-size: 0.82rem;
+}
+
+.contract-tag {
+  color: var(--muted);
+  font-family: var(--font-data);
+  font-size: 0.66rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.contract-addr {
+  font-family: var(--font-data);
+  font-size: 0.8rem;
+  background: none;
+  border: 0;
+  padding: 0;
+}
+
+.contract-btns {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-left: auto;
+  font-size: 0.8rem;
+}
+
 .kv-value {
   font-family: var(--font-display);
   font-size: 1.3rem;
