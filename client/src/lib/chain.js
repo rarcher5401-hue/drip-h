@@ -32,6 +32,15 @@ export const DEFAULT_NETWORK = NETWORKS[4663];
 const ENV_CHAIN_ID = Number(import.meta.env.VITE_CHAIN_ID || 0);
 const ENV_TOKEN_ADDRESS = import.meta.env.VITE_TOKEN_ADDRESS || null;
 const ENV_FAUCET_ADDRESS = import.meta.env.VITE_FAUCET_ADDRESS || null;
+const ENV_DEV_WALLET = import.meta.env.VITE_DEV_WALLET || null;
+
+// Controls who sees the "Fund reserve" panel. UI-only gating: fundRewards is
+// permissionless on-chain (a donation), so this just keeps the panel out of
+// regular users' way. Set VITE_DEV_WALLET and rebuild to change it.
+export function isDevWallet(account) {
+  if (!account || !ENV_DEV_WALLET || !ethers.isAddress(ENV_DEV_WALLET)) return false;
+  return account.toLowerCase() === ENV_DEV_WALLET.toLowerCase();
+}
 
 function validAddress(address) {
   return Boolean(address && ethers.isAddress(address) && address !== ethers.ZeroAddress);

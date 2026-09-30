@@ -125,6 +125,9 @@ npm.cmd run deploy:pons
 5. Update the frontend: `VITE_CHAIN_ID=4663`, `VITE_TOKEN_ADDRESS`, `VITE_FAUCET_ADDRESS`.
    The landing, faucet, and mechanics pages display the token + faucet contract addresses
    (with copy buttons and explorer links) from that configuration automatically.
+6. Optional: set `VITE_DEV_WALLET` to the dev wallet address and rebuild. Only that wallet
+   sees the "Fund reserve" panel (a dashed, dev-labeled box kept separate from staking, since
+   funding creates no principal and earns nothing). Anyone can still fund on-chain directly.
 
 Verify on Blockscout:
 

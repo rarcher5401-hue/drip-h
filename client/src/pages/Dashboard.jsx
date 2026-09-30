@@ -4,7 +4,7 @@ import { ethers } from "ethers";
 import { useWeb3 } from "../lib/Web3Context";
 import { useToast } from "../components/Toast";
 import ContractLinks from "../components/ContractLinks";
-import { parseEther, loadProtocol, loadPosition, fmtToken, shortAddress, getNetwork } from "../lib/chain";
+import { parseEther, loadProtocol, loadPosition, fmtToken, shortAddress, getNetwork, isDevWallet } from "../lib/chain";
 
 const PREVIEW = {
   protocol: {
@@ -70,6 +70,7 @@ export default function Dashboard() {
 
   const [amount, setAmount] = useState("");
   const [withdrawAmt, setWithdrawAmt] = useState("");
+  const [fundAmt, setFundAmt] = useState("");
   const [busy, setBusy] = useState(null); // running action key
   const [lastTx, setLastTx] = useState(null);
   const txLock = useRef(false);
@@ -237,6 +238,32 @@ export default function Dashboard() {
     }
     if (position?.principalWei != null && amountWei > position.principalWei) return toast.error("Amount exceeds your principal.");
     await run("withdraw", async () => (await getContracts()).faucet.withdraw(amountWei), `Withdrew ${fmtToken(amountWei)} DRIPH (taxed 10%).`);
+  }
+
+  async function fundReserve() {
+    let amountWei;
+    try {
+      amountWei = parseTokenAmount(fundAmt);
+    } catch (err) {
+      return toast.error(err.message);
+    }
+    if (position?.balanceWei != null && amountWei > position.balanceWei) return toast.error("Amount exceeds your DRIPH balance.");
+
+    if ((position?.allowanceWei ?? 0n) < amountWei) {
+      const approved = await run("approve", async () => {
+        const { token, deployment } = await getContracts();
+        return token.approve(deployment.faucet, amountWei);
+      }, "Spending approved.");
+      if (!approved) return;
+    }
+    const ok = await run("fund", async () => {
+      const { token, faucet, signer, deployment } = await getContracts();
+      const signerAddress = await signer.getAddress();
+      const currentAllowance = await token.allowance(signerAddress, deployment.faucet);
+      if (currentAllowance < amountWei) throw new Error("Approval is no longer sufficient.");
+      return faucet.fundRewards(amountWei);
+    }, `Funded the reserve with ${fmtToken(amountWei)} DRIPH.`);
+    if (ok) setFundAmt("");
   }
 
   const needsContract = !tokenAddress || !faucetAddress;
@@ -458,6 +485,33 @@ export default function Dashboard() {
                   Earnings never touch reserved principal.
                 </p>
               </div>
+
+              {!preview && account && isDevWallet(account) && (
+                <div className="card panel dev-panel">
+                  <div className="panel-title">
+                    <h3>Fund reserve</h3>
+                    <span className="account-pill">dev only</span>
+                  </div>
+                  <p className="muted small" style={{ margin: 0 }}>
+                    Send DRIPH to the reserve as backing. This is <strong>not staking</strong> — it
+                    creates no principal, earns no rewards, and cannot be withdrawn. For topping up
+                    the pool with creator fees.
+                  </p>
+                  <div className="ref-link-row">
+                    <div className="field">
+                      <span>Amount (DRIPH in your wallet: {viewPosition?.balance ?? "0"})</span>
+                      <input
+                        type="number" min="0" step="any" value={fundAmt}
+                        onChange={(e) => setFundAmt(e.target.value)} placeholder="1000"
+                        disabled={busy}
+                      />
+                    </div>
+                    <button className="btn btn--dark" onClick={fundReserve} disabled={busy || !fundAmt.trim()}>
+                      {busy === "fund" || busy === "approve" ? "Working…" : "Fund"}
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="dash-side">

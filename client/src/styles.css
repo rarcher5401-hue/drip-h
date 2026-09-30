@@ -1097,6 +1097,19 @@ code {
 .ref-stats { grid-template-columns: repeat(3, 1fr); }
 .ref-stats .kv-value { font-size: 1.06rem; }
 
+.dev-panel {
+  gap: 14px;
+  background: #fffdf5;
+  border-style: dashed;
+  border-color: #e5cf8a;
+}
+
+.dev-panel .account-pill {
+  color: #713f12;
+  background: #fef3c7;
+  border-color: #fde68a;
+}
+
 .hero-contracts { margin-top: 22px; max-width: 560px; }
 
 .how-contracts {
