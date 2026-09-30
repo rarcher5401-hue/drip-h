@@ -107,7 +107,7 @@ Mainnet: `npm run deploy:mainnet`.
 
 1. Launch **DRIPH** on Pons (`https://www.ponsfamily.com/launchpad/create`): fixed 1,000,000,000
    supply, paired with WETH, 0.0005 ETH launch fee. Set **creator tax to 2.5%** with your dev
-   wallet (`0x94641b97010608C3827fB058074889f19868FF33`) as the creator wallet.
+   wallet (`0x752FeFcb5705CC28f9Ff306d251d957fD89970f9`) as the creator wallet.
 2. Make a developer buy so you hold DRIPH for the initial faucet reserve.
 3. Deploy only the faucet against the Pons token address (mainnet refuses to deploy a second
    custom token unless `ALLOW_CUSTOM_TOKEN=true`):
