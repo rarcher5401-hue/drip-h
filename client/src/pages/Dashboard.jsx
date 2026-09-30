@@ -486,7 +486,7 @@ export default function Dashboard() {
                 </p>
               </div>
 
-              {!preview && account && isDevWallet(account) && (
+              {(preview || (account && isDevWallet(account))) && (
                 <div className="card panel dev-panel">
                   <div className="panel-title">
                     <h3>Fund reserve</h3>
@@ -503,10 +503,10 @@ export default function Dashboard() {
                       <input
                         type="number" min="0" step="any" value={fundAmt}
                         onChange={(e) => setFundAmt(e.target.value)} placeholder="1000"
-                        disabled={busy}
+                        disabled={busy || preview}
                       />
                     </div>
-                    <button className="btn btn--dark" onClick={fundReserve} disabled={busy || !fundAmt.trim()}>
+                    <button className="btn btn--dark" onClick={fundReserve} disabled={busy || preview || !fundAmt.trim()}>
                       {busy === "fund" || busy === "approve" ? "Working…" : "Fund"}
                     </button>
                   </div>
