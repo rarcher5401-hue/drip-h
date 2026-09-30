@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { getPonsUrl } from "../lib/chain";
 
 const STEPS = [
   {
@@ -89,9 +90,19 @@ export default function HowItWorks() {
 
       <section className="section">
         <div className="gate" style={{ paddingBottom: 0 }}>
-          <Link className="btn btn--primary btn--lg" to="/faucet">
-            Open the faucet <span aria-hidden="true">→</span>
-          </Link>
+          <div className="hero-actions" style={{ justifyContent: "center" }}>
+            <Link className="btn btn--primary btn--lg" to="/faucet">
+              Open the faucet <span aria-hidden="true">→</span>
+            </Link>
+            <a
+              className="btn btn--ghost btn--lg"
+              href={getPonsUrl() ?? "https://www.ponsfamily.com/launchpad"}
+              target="_blank"
+              rel="noreferrer"
+            >
+              Buy DRIPH on Pons ↗
+            </a>
+          </div>
         </div>
       </section>
     </div>

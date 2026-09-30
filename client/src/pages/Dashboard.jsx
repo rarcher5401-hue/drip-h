@@ -21,6 +21,7 @@ const PREVIEW = {
     rewardObligation: "16,120.24",
     obligationTotal: "68,120.24",
     coveragePct: 121.3,
+    ponsUrl: "https://www.ponsfamily.com/launchpad/0xYourTokenAddress",
   },
   position: {
     principalWei: BigInt("25000000000000000000000"),
@@ -371,6 +372,14 @@ export default function Dashboard() {
                     )}
                     {refPreview && (
                       <p className="hint small">Split: 90% your principal · 2% ({refPreview} DRIPH) referrer · 8% reserve.</p>
+                    )}
+                    {viewProtocol?.ponsUrl && (
+                      <p className="hint small">
+                        Need DRIPH?{" "}
+                        <a className="link" href={viewProtocol.ponsUrl} target="_blank" rel="noreferrer">
+                          Buy on Pons ↗
+                        </a>
+                      </p>
                     )}
                   </div>
                   <div className="action-block">
