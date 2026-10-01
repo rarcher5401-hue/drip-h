@@ -2,9 +2,8 @@
 pragma solidity ^0.8.24;
 
 /// @title DripHToken
-/// @notice DRIPH - a simple ERC-20 with an optional transfer fee. Fee-excluded
-///         accounts (the faucet, the treasury, the deployer) move tokens
-///         freely, so staking and payouts are never double-taxed.
+/// @notice DRIPH - a fee-free fixed-supply ERC-20. Every transfer moves the
+///         full amount: no transfer tax on buys, sells, stakes, or payouts.
 contract DripHToken {
     string public constant name = "Drip H";
     string public constant symbol = "DRIPH";
@@ -12,7 +11,6 @@ contract DripHToken {
     uint256 public constant MAX_SUPPLY = 1_000_000 * 1e18;
 
     uint256 public totalSupply;
-    uint256 public transferFeeBps = 250; // 2.50% on regular transfers
     address public owner;
     address public pendingOwner;
     address public treasury;
@@ -24,7 +22,6 @@ contract DripHToken {
 
     event Transfer(address indexed from, address indexed to, uint256 value);
     event Approval(address indexed owner_, address indexed spender, uint256 value);
-    event FeeUpdated(uint256 bps);
     event Excluded(address indexed account, bool excluded);
     event ExclusionLocked(address indexed account);
     event TreasuryUpdated(address indexed previousTreasury, address indexed newTreasury);
@@ -64,12 +61,6 @@ contract DripHToken {
         }
         _transfer(from, to, amount);
         return true;
-    }
-
-    function setTransferFeeBps(uint256 bps) external onlyOwner {
-        require(bps <= 500, "DripHToken: too high");
-        transferFeeBps = bps;
-        emit FeeUpdated(bps);
     }
 
     function setTreasury(address treasury_) external onlyOwner {
@@ -117,17 +108,8 @@ contract DripHToken {
         require(to != address(0), "DripHToken: zero address");
         require(balanceOf[from] >= amount, "DripHToken: balance");
 
-        uint256 fee = 0;
-        if (!isExcluded(from) && !isExcluded(to) && transferFeeBps > 0) {
-            fee = (amount * transferFeeBps) / 10000;
-        }
-
         balanceOf[from] -= amount;
-        if (fee > 0) {
-            balanceOf[treasury] += fee;
-            emit Transfer(from, treasury, fee);
-        }
-        balanceOf[to] += amount - fee;
-        emit Transfer(from, to, amount - fee);
+        balanceOf[to] += amount;
+        emit Transfer(from, to, amount);
     }
 }

@@ -37,7 +37,7 @@ token has been reserved.
 drip-h/
 ├─ contracts/                       # Hardhat (Solidity + tests)
 │  ├─ contracts/
-│  │  ├─ DripHToken.sol           # DRIPH ERC-20 with optional transfer fee + exclusion list
+│  │  ├─ DripHToken.sol           # fee-free fixed-supply DRIPH ERC-20
 │  │  └─ DripHFaucet.sol          # the faucet: stake, accrue, compound, claim, withdraw
 │  ├─ test/DripH.js                # 16 accounting and security tests
 │  ├─ scripts/deploy.js             # deploys both contracts, wires address into the client
@@ -188,8 +188,7 @@ drips rather than warning you that the obligation has already run away.
   paid while the faucet holds DRIPH. There is **no payout cap**, but the dynamic rate dials back
   as coverage thins - instead of creating an unfunded obligation at full speed, rewards slow down
   until deposits rebuild the reserve.
-- The DRIPH transfer fee (2.5%) applies to normal transfers; it goes to the treasury wallet and
-  is **exempt** for the faucet, treasury, and current owner so internal flows aren't double-taxed.
+- DRIPH has **no transfer fee**: buys, sells, and wallet moves all transfer the full amount.
   Deposit/withdraw taxes (10% each) never leave the faucet - they're part of the reserve backing claims.
 - Built for **education / demo** use. Test on testnet with pretend money before anything real.
 
