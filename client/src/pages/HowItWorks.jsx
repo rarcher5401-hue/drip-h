@@ -48,7 +48,7 @@ export default function HowItWorks() {
         <div className="mechanic-row">
           <span><strong>0.50%</strong> max daily rate</span>
           <span><strong>10%</strong> pool-backed taxes</span>
-          <span><strong>0</strong> lockup days</span>
+          <span><strong>30→10%</strong> exit-fee schedule, never locked</span>
         </div>
       </section>
 
