@@ -1603,6 +1603,31 @@ code {
 
 .footer strong { color: var(--text); }
 
+.social-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.social-link:hover { color: var(--text); }
+
+.x-link {
+  display: inline-flex;
+  align-items: center;
+  color: var(--muted);
+  padding: 8px;
+  border-radius: 10px;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+.x-link:hover {
+  color: var(--text);
+  text-decoration: none;
+  background: var(--surface-2);
+}
+
 .footer p {
   margin: 4px 0;
 }
