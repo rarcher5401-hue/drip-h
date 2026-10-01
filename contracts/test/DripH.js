@@ -31,23 +31,27 @@ describe("DripHToken", function () {
     expect(await token.balanceOf(owner.address)).to.equal(e("1000000"));
   });
 
-  it("moves the full amount on every transfer - no fee on buys, sells, or wallet moves", async function () {
+  it("applies the transfer fee only when neither endpoint is excluded", async function () {
     await token.transfer(bob.address, e("1000"));
     await token.connect(bob).transfer(carol.address, e("100"));
-    expect(await token.balanceOf(carol.address)).to.equal(e("100"));
-    expect(await token.balanceOf(treasury.address)).to.equal(0n);
+    expect(await token.balanceOf(carol.address)).to.equal(e("97.5"));
+    expect(await token.balanceOf(treasury.address)).to.equal(e("2.5"));
 
     await token.setExcluded(carol.address, true);
     await token.connect(bob).transfer(carol.address, e("100"));
-    expect(await token.balanceOf(carol.address)).to.equal(e("200"));
+    expect(await token.balanceOf(carol.address)).to.equal(e("197.5"));
   });
 
-  it("transfers ownership in two steps with owner-only administration", async function () {
+  it("caps administration and transfers ownership in two steps", async function () {
+    await expect(token.setTransferFeeBps(501)).to.be.revertedWith("DripHToken: too high");
+    await token.setTransferFeeBps(500);
+    expect(await token.transferFeeBps()).to.equal(500n);
+
     await token.transferOwnership(bob.address);
     await expect(token.connect(carol).acceptOwnership()).to.be.revertedWith("DripHToken: not pending owner");
     await token.connect(bob).acceptOwnership();
     expect(await token.owner()).to.equal(bob.address);
-    await expect(token.setExcluded(carol.address, true)).to.be.revertedWith("DripHToken: not owner");
+    await expect(token.setTransferFeeBps(100)).to.be.revertedWith("DripHToken: not owner");
   });
 
   it("rejects zero treasury and preserves manual exclusions across treasury rotation", async function () {
@@ -182,11 +186,10 @@ describe("DripHFaucet security accounting", function () {
     expect(await faucet.rewardHeadroom()).to.equal(e("1000"));
   });
 
-  it("deposits exact amounts with no transfer fee regardless of exclusion", async function () {
+  it("rejects fee-on-transfer deposits if the faucet exemption is removed", async function () {
     await token.setExcluded(await faucet.getAddress(), false);
-    await deposit(alice, 100);
-    expect((await faucet.users(alice.address)).principal).to.equal(e("90"));
-    expect(await faucet.accountedBalance()).to.equal(e("100"));
+    await expect(deposit(alice, 100)).to.be.revertedWith("Drip H: fee-on-transfer unsupported");
+    expect(await faucet.totalPrincipal()).to.equal(0n);
   });
 
   it("lets the rate reach zero instead of creating unfunded rewards", async function () {
@@ -234,7 +237,8 @@ describe("DripHFaucet with a standard fee-free token (Pons-style)", function () 
     [owner, alice] = await ethers.getSigners();
     token = await (await ethers.getContractFactory("DripHToken")).deploy(owner.address);
     await token.waitForDeployment();
-    // The token is fee-free with no exclusions: standard ERC20 behavior.
+    // Simulate a standard ERC20 with no transfer fee and no exclusions.
+    await token.setTransferFeeBps(0);
 
     faucet = await (
       await ethers.getContractFactory("DripHFaucet")

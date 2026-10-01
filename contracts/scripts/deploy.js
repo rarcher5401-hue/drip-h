@@ -73,7 +73,7 @@ async function main() {
     token = await (await ethers.getContractFactory("DripHToken")).deploy(treasuryAddress);
     await token.waitForDeployment();
     tokenAddr = await token.getAddress();
-    console.log(`transfer fee   -> none (fee-free transfers)`);
+    console.log(`transfer fee   -> 2.5% to treasury (${treasuryAddress})`);
 
     var customTokenCtx = { token, treasuryAddress, ownerAddress, supplyRecipient };
   }
