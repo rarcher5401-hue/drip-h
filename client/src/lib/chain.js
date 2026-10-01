@@ -166,11 +166,12 @@ export async function loadPosition(chainId, account) {
   const token = getReadOnlyToken(chainId);
   if (!faucet || !token || !deployment || !account) return null;
 
-  const [user, pending, balance, allowance] = await Promise.all([
+  const [user, pending, balance, allowance, withdrawTaxBps] = await Promise.all([
     faucet.users(account),
     faucet.pendingRewards(account),
     token.balanceOf(account),
     token.allowance(account, deployment.faucet),
+    faucet.withdrawTaxBpsFor(account),
   ]);
 
   const principal = BigInt(user.principal);
@@ -192,6 +193,7 @@ export async function loadPosition(chainId, account) {
     balanceWei: BigInt(balance),
     balance: fmtToken(balance),
     allowanceWei: BigInt(allowance),
+    withdrawTaxBps: Number(withdrawTaxBps),
     lastUpdate: Number(user.lastUpdate),
     hasDeposited: Boolean(user.hasDeposited),
   };

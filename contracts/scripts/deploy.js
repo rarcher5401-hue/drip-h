@@ -7,8 +7,14 @@ const path = require("path");
 // reward rate dials back automatically when the reserve thins. Both 10% taxes
 // stay in the faucet as backing instead of leaving to wallets.
 const DAILY_RATE_WAD = ethers.parseUnits("0.005", 18);
-const DEPOSIT_TAX_BPS = 1000;   // 10% - stays in the pool as backing
-const WITHDRAW_TAX_BPS = 1000;  // 10% - stays in the pool as backing
+const DEPOSIT_TAX_BPS = 1000;        // 10% flat - stays in the pool as backing
+const WITHDRAW_TAX_BPS = 1000;       // 10% base after the early period
+const EARLY_WITHDRAW_TAX_BPS = 3000; // 30% during the first 90 days after launch
+const WHALE_WITHDRAW_TAX_BPS = 3000; // 30% for principals above the whale threshold
+const WHALE_THRESHOLD = ethers.parseEther("2000000"); // 2M DRIPH principal
+const EARLY_PERIOD = 90 * 86400;     // 90 days in seconds
+// NOTE: all of the above are immutable once deployed. There is no admin
+// function to change them later - a schedule change requires a new faucet.
 
 // Minimal surface needed to attach to a Pons-launched token.
 const PONS_TOKEN_ABI = [
@@ -80,7 +86,16 @@ async function main() {
 
   const faucet = await (
     await ethers.getContractFactory("DripHFaucet")
-  ).deploy(tokenAddr, DAILY_RATE_WAD, DEPOSIT_TAX_BPS, WITHDRAW_TAX_BPS);
+  ).deploy(
+    tokenAddr,
+    DAILY_RATE_WAD,
+    DEPOSIT_TAX_BPS,
+    WITHDRAW_TAX_BPS,
+    EARLY_WITHDRAW_TAX_BPS,
+    WHALE_WITHDRAW_TAX_BPS,
+    WHALE_THRESHOLD,
+    EARLY_PERIOD
+  );
   await faucet.waitForDeployment();
   const faucetAddr = await faucet.getAddress();
 
@@ -131,7 +146,7 @@ async function main() {
   console.log(`DripHFaucet -> ${faucetAddr}`);
   console.log(`base rate      -> up to 0.5%/day (${ethers.formatUnits(DAILY_RATE_WAD, 18)} wad/day, dynamic)`);
   console.log(`payout cap    -> none`);
-  console.log(`taxes          -> deposit+withdraw 10% each, kept in the pool as backing`);
+  console.log(`taxes          -> deposit 10% flat; withdraw 30% for 90 days, then 10% (30% above 2M principal)`);
 
   if (chainId === 4663 || chainId === 46630) {
     const out = path.join(__dirname, "..", "..", "client", "src", "lib", "deployed-address.json");

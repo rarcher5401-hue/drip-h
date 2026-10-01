@@ -18,18 +18,21 @@ token has been reserved.
 | Daily rate | 1% / day | **up to 0.5% / day** (~517% APY compounded) - full rate while covered, dialed down as coverage thins |
 | Payout ceiling | none | **none** (same flywheel, half the fuel) |
 | Claim liquidity gate | pay-window unlock | claims paid from DRIPH the faucet holds |
-| Deposit tax | 10% | 10% (stays in the pool as backing) |
-| Withdraw tax | 10% | 10% (stays in the pool as backing) |
+| Deposit tax | 10% | 10% flat (stays in the pool as backing) |
+| Withdraw tax | 10% | 30% for 90 days, then 10% (30% above 2M principal) |
 | Lockups / windows | pay-window unlock | none - pull anytime |
 
 ## How the faucet works
 
 1. Connect a wallet (any EVM wallet; the app auto-adds Robinhood Chain).
 2. Get **DRIPH** (1,000,000 minted to the deployer at launch, or the 1,000,000,000 fixed supply from the Pons launch on mainnet).
-3. **Deposit** DRIPH - a 10% deposit tax stays in the faucet as backing; the remaining 90% becomes your earning principal.
+3. **Deposit** DRIPH - a flat 10% deposit tax stays in the faucet as backing; the remaining 90% becomes your earning principal.
 4. The faucet accrues **up to 0.5% of principal per day** (per-second, exact compounding; dialed down automatically when the reserve thins).
 5. **Compound** (re-invest into principal - no payout ceiling, so it keeps growing) or **Claim** (send rewards to your wallet - requires the faucet to hold liquidity).
-6. **Withdraw** principal anytime (10% tax, which also stays as backing). There is no cap: rewards keep accruing as long as you stay staked.
+6. **Withdraw** principal anytime - exits are never locked. The exit fee is 30% for the first 90 days after launch, then 10% (30% for principals above 2,000,000 DRIPH). All of it stays as backing. There is no cap: rewards keep accruing as long as you stay staked.
+
+The deposit rate and the entire exit-fee schedule are **immutable once deployed** - changing
+them later requires deploying a new faucet and migrating positions by hand.
 
 ## Project layout
 
@@ -91,7 +94,7 @@ npm run deploy:testnet
 
 The deploy script:
 - deploys `DripHToken` (mints 1,000,000 DRIPH to the deployer)
-- deploys `DripHFaucet` (0.5%/day base rate, 10% deposit + 10% withdraw tax, **no payout cap**)
+- deploys `DripHFaucet` (0.5%/day base rate, 10% deposit tax, exit-fee schedule, **no payout cap**)
 - permanently locks the faucet's transfer-fee exemption (so administration cannot break accounting)
 - confirms setup transactions, checks deployment postconditions, and writes a chain-scoped entry to `client/src/lib/deployed-address.json`
 
@@ -133,8 +136,8 @@ Verify on Blockscout:
 
 ```bash
 npx hardhat verify --network robinhoodTestnet <TOKEN_ADDRESS> <treasury_address>
-npx hardhat verify --network robinhoodTestnet <FAUCET_ADDRESS> <token> <"5000000000000000000"> <1000> <1000>
-npx hardhat verify --network robinhood <FAUCET_ADDRESS> <pons_token> <"5000000000000000000"> <1000> <1000>
+npx hardhat verify --network robinhoodTestnet <FAUCET_ADDRESS> <token> <"5000000000000000000"> <1000> <1000> <3000> <3000> <"2000000000000000000000000"> <7776000>
+npx hardhat verify --network robinhood <FAUCET_ADDRESS> <pons_token> <"5000000000000000000"> <1000> <1000> <3000> <3000> <"2000000000000000000000000"> <7776000>
 ```
 
 ### 3. Frontend
@@ -161,7 +164,7 @@ npm.cmd run dev
 | `deposit(amount)` | anyone | taxes 10% (kept in the pool as backing), nets the remaining 90% to principal |
 | `compound()` | stakers | adds pending rewards to principal; no payout ceiling |
 | `claim()` | stakers | sends pending rewards to wallet; needs faucet liquidity |
-| `withdraw(amount)` | stakers | returns principal minus 10% withdraw tax (tax stays as backing) |
+| `withdraw(amount)` | stakers | returns principal minus the scheduled exit fee (30% / 10% / whale 30%) |
 | `fundRewards(amount)` | anyone | adds exact DRIPH backing without creating principal |
 | `syncDonations()` | anyone | recognizes direct DRIPH transfers after checkpointing elapsed rewards |
 | `pendingRewards(addr)` | anyone | returns that user's accrued-but-unrealized rewards |
@@ -190,7 +193,7 @@ drips rather than warning you that the obligation has already run away.
   until deposits rebuild the reserve.
 - The DRIPH transfer fee (2.5%) applies to normal transfers; it goes to the treasury wallet and
   is **exempt** for the faucet, treasury, and current owner so internal flows aren't double-taxed.
-  Deposit/withdraw taxes (10% each) never leave the faucet - they're part of the reserve backing claims.
+  The 10% deposit tax and every exit fee never leave the faucet - they're part of the reserve backing claims.
 - Built for **education / demo** use. Test on testnet with pretend money before anything real.
 
 ## Roadmap ideas

@@ -84,7 +84,16 @@ describe("DripHFaucet security accounting", function () {
     await token.waitForDeployment();
     faucet = await (
       await ethers.getContractFactory("DripHFaucet")
-    ).deploy(await token.getAddress(), RATE_PER_DAY, 1000, 1000);
+    ).deploy(
+      await token.getAddress(),
+      RATE_PER_DAY,
+      1000, // 10% deposit tax
+      1000, // 10% base withdraw tax
+      3000, // 30% early-exit fee
+      3000, // 30% whale rate
+      e("2000000"), // 2M DRIPH whale threshold
+      90 * DAY // 90-day early period
+    );
     await faucet.waitForDeployment();
     await token.setExcluded(await faucet.getAddress(), true);
 
@@ -228,6 +237,62 @@ describe("DripHFaucet security accounting", function () {
     await deposit(alice, 10);
     await expect(faucet.connect(alice).withdraw(e("10"))).to.be.revertedWith("Drip H: amount");
   });
+
+  it("charges the 30% early-exit fee during the first 90 days", async function () {
+    await deposit(alice, 100); // principal 90, well under the whale line
+    expect(await faucet.withdrawTaxBpsFor(alice.address)).to.equal(3000n);
+
+    const before = await token.balanceOf(alice.address);
+    await faucet.connect(alice).withdraw(e("90"));
+    expect((await token.balanceOf(alice.address)) - before).to.equal(e("63")); // 90 - 30%
+    expect((await faucet.users(alice.address)).principal).to.equal(0n);
+    await expectSolvent();
+  });
+
+  it("drops to the 10% base rate after 90 days for normal principals", async function () {
+    await deposit(alice, 100);
+    await warp(91);
+    expect(await faucet.withdrawTaxBpsFor(alice.address)).to.equal(1000n);
+
+    const before = await token.balanceOf(alice.address);
+    await faucet.connect(alice).withdraw(e("90"));
+    expect((await token.balanceOf(alice.address)) - before).to.equal(e("81")); // 90 - 10%
+    await expectSolvent();
+  });
+
+  it("keeps whale principals on the 30% rate after 90 days", async function () {
+    const whaleFaucet = await (
+      await ethers.getContractFactory("DripHFaucet")
+    ).deploy(
+      await token.getAddress(),
+      RATE_PER_DAY,
+      1000,
+      1000,
+      3000,
+      3000,
+      e("100"), // low threshold so the test can reach it
+      1 * DAY
+    );
+    await whaleFaucet.waitForDeployment();
+    await token.setExcluded(await whaleFaucet.getAddress(), true);
+    await token.connect(alice).approve(await whaleFaucet.getAddress(), ethers.MaxUint256);
+    await token.connect(bob).approve(await whaleFaucet.getAddress(), ethers.MaxUint256);
+
+    await whaleFaucet.connect(alice).deposit(e("200")); // principal 180 > 100: whale
+    await whaleFaucet.connect(bob).deposit(e("100")); // principal 90: normal
+    await warp(2); // past the 1-day early period
+
+    expect(await whaleFaucet.withdrawTaxBpsFor(alice.address)).to.equal(3000n);
+    expect(await whaleFaucet.withdrawTaxBpsFor(bob.address)).to.equal(1000n);
+
+    const beforeAlice = await token.balanceOf(alice.address);
+    await whaleFaucet.connect(alice).withdraw(e("100"));
+    expect((await token.balanceOf(alice.address)) - beforeAlice).to.equal(e("70"));
+
+    const beforeBob = await token.balanceOf(bob.address);
+    await whaleFaucet.connect(bob).withdraw(e("90"));
+    expect((await token.balanceOf(bob.address)) - beforeBob).to.equal(e("81"));
+  });
 });
 
 describe("DripHFaucet with a standard fee-free token (Pons-style)", function () {
@@ -242,7 +307,16 @@ describe("DripHFaucet with a standard fee-free token (Pons-style)", function () 
 
     faucet = await (
       await ethers.getContractFactory("DripHFaucet")
-    ).deploy(await token.getAddress(), RATE_PER_DAY, 1000, 1000);
+    ).deploy(
+      await token.getAddress(),
+      RATE_PER_DAY,
+      1000, // 10% deposit tax
+      1000, // 10% base withdraw tax
+      3000, // 30% early-exit fee
+      3000, // 30% whale rate
+      e("2000000"), // 2M DRIPH whale threshold
+      90 * DAY // 90-day early period
+    );
     await faucet.waitForDeployment();
 
     await token.transfer(alice.address, e("10000"));

@@ -32,6 +32,7 @@ const PREVIEW = {
     claimed: "1,250.00",
     balance: "820.55",
     allowanceWei: 0n,
+    withdrawTaxBps: 3000,
   },
 };
 
@@ -243,7 +244,8 @@ export default function Dashboard() {
       return toast.error(err.message);
     }
     if (position?.principalWei != null && amountWei > position.principalWei) return toast.error("Amount exceeds your principal.");
-    await run("withdraw", async () => (await getContracts()).faucet.withdraw(amountWei), `Withdrew ${fmtToken(amountWei)} DRIPH (taxed 10%).`);
+    const rateAtSubmit = (position?.withdrawTaxBps ?? 1000) / 100;
+    await run("withdraw", async () => (await getContracts()).faucet.withdraw(amountWei), `Withdrew ${fmtToken(amountWei)} DRIPH (taxed ${rateAtSubmit}%).`);
   }
 
   async function fundReserve() {
@@ -273,6 +275,7 @@ export default function Dashboard() {
   }
 
   const needsContract = !tokenAddress || !faucetAddress;
+  const exitRatePct = (viewPosition?.withdrawTaxBps ?? 1000) / 100;
 
   return (
     <div className="page">
@@ -369,7 +372,7 @@ export default function Dashboard() {
               <div className="card panel action-card">
                 <div className="panel-title">
                   <h3>Actions</h3>
-                  <span className="muted small">10% tax funds the reserve</span>
+                  <span className="muted small">taxes fund the reserve</span>
                 </div>
 
                 <div className="action-grid">
@@ -410,7 +413,7 @@ export default function Dashboard() {
                   <div className="action-block">
                     <div className="action-copy">
                       <strong>Withdraw principal</strong>
-                      <span>Receive 90%; 10% stays in the reserve.</span>
+                      <span>Receive {100 - exitRatePct}%; {exitRatePct}% stays in the reserve.</span>
                     </div>
                     <div className="action-row">
                       <div className="field">
@@ -421,6 +424,7 @@ export default function Dashboard() {
                         {busy === "withdraw" ? "Working…" : "Withdraw"}
                       </button>
                     </div>
+                    <p className="hint small">Exit schedule (fixed at launch): 30% for the first 90 days, then 10% — 30% for principals above 2M DRIPH.</p>
                   </div>
                 </div>
 

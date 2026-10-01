@@ -25,7 +25,7 @@ const STEPS = [
   {
     n: "05",
     title: "Withdraw anytime",
-    body: "Pull your principal whenever you like (10% withdraw tax, which stays in the pool as backing). No lockups, no windows, no unlock calendars.",
+    body: "Pull your principal whenever you like — exits are never locked. Withdrawals cost 30% for the first 90 days after launch, then 10% (30% for principals above 2M DRIPH). Every exit fee stays in the pool as backing.",
   },
   {
     n: "06",
@@ -79,7 +79,7 @@ export default function HowItWorks() {
           </div>
           <div className="card panel">
             <h3>3. Taxes feed the pool</h3>
-            <p className="muted">10% deposit and 10% withdraw taxes stay in the faucet as reserve backing — except a 2% referral slice of each deposit, which rewards the referrer while the remaining 8% tops up whatever claims are owed.</p>
+            <p className="muted">10% of every deposit stays in the faucet (8% reserve backing + 2% referrer reward), and every withdrawal pays an exit fee into the reserve too: 30% for the first 90 days, then 10% — 30% for principals above 2M DRIPH.</p>
           </div>
           <div className="card panel">
             <h3>4. Pull, don't push</h3>

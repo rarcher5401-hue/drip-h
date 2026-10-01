@@ -16,7 +16,12 @@ contract DripHFaucet {
 
     uint256 public immutable baseRatePerSecond;
     uint256 public immutable depositTaxBps;
-    uint256 public immutable withdrawTaxBps;
+    uint256 public immutable withdrawTaxBps; // base rate once the early period ends
+    uint256 public immutable earlyWithdrawTaxBps; // punitive rate during the early period
+    uint256 public immutable whaleWithdrawTaxBps; // punitive rate for principals above the threshold
+    uint256 public immutable whaleThreshold; // principals above this pay the whale rate
+    uint256 public immutable earlyPeriod; // seconds from launch during which the early rate applies
+    uint256 public immutable launchTime;
 
     uint256 public constant DAY = 86400;
     uint256 private constant WAD = 1e18;
@@ -68,18 +73,39 @@ contract DripHFaucet {
         address token_,
         uint256 dailyRateWad,
         uint256 depositTaxBps_,
-        uint256 withdrawTaxBps_
+        uint256 withdrawTaxBps_,
+        uint256 earlyWithdrawTaxBps_,
+        uint256 whaleWithdrawTaxBps_,
+        uint256 whaleThreshold_,
+        uint256 earlyPeriod_
     ) {
         require(token_ != address(0), "Drip H: zero address");
         require(dailyRateWad > 0 && dailyRateWad < 5e16, "Drip H: invalid rate");
         require(depositTaxBps_ <= 2000 && withdrawTaxBps_ <= 2000, "Drip H: tax too high");
+        require(earlyWithdrawTaxBps_ <= 5000 && whaleWithdrawTaxBps_ <= 5000, "Drip H: punitive tax too high");
+        require(whaleThreshold_ > 0, "Drip H: invalid whale threshold");
+        require(earlyPeriod_ > 0 && earlyPeriod_ <= 365 days, "Drip H: invalid early period");
 
         token = IERC20(token_);
         baseRatePerSecond = dailyRateWad / DAY;
         require(baseRatePerSecond > 0, "Drip H: rate too low");
         depositTaxBps = depositTaxBps_;
         withdrawTaxBps = withdrawTaxBps_;
+        earlyWithdrawTaxBps = earlyWithdrawTaxBps_;
+        whaleWithdrawTaxBps = whaleWithdrawTaxBps_;
+        whaleThreshold = whaleThreshold_;
+        earlyPeriod = earlyPeriod_;
+        launchTime = block.timestamp;
         lastGlobalUpdate = block.timestamp;
+    }
+
+    /// @notice Withdraw tax schedule, fixed at deployment and unchangeable:
+    ///         the punitive early rate for the first `earlyPeriod` seconds after
+    ///         launch, then the base rate - except principals above
+    ///         `whaleThreshold`, which keep paying the whale rate.
+    function withdrawTaxBpsFor(address who) public view returns (uint256) {
+        if (block.timestamp < launchTime + earlyPeriod) return earlyWithdrawTaxBps;
+        return users[who].principal > whaleThreshold ? whaleWithdrawTaxBps : withdrawTaxBps;
     }
 
     // ---------- reserve and rate ----------
@@ -260,6 +286,10 @@ contract DripHFaucet {
         emit Claim(msg.sender, amount);
     }
 
+    /// @notice Withdrawals follow the immutable launch schedule
+    ///         (see withdrawTaxBpsFor): punitive early on, then the base rate,
+    ///         with whale principals permanently on the whale rate. The tax
+    ///         stays in the faucet as reserve backing.
     function withdraw(uint256 amount) external nonReentrant returns (uint256 net) {
         require(amount > 0, "Drip H: amount");
         _checkpoint();
@@ -267,7 +297,7 @@ contract DripHFaucet {
 
         User storage u = users[msg.sender];
         require(amount <= u.principal, "Drip H: amount");
-        net = amount - (amount * withdrawTaxBps) / BPS;
+        net = amount - (amount * withdrawTaxBpsFor(msg.sender)) / BPS;
 
         u.principal -= amount;
         totalPrincipal -= amount;

@@ -127,7 +127,7 @@ export default function Landing() {
       <section className="value-strip" aria-label="Protocol design">
         <article>
           <span className="value-index">01</span>
-          <div><strong>Taxes strengthen the pool</strong><p>10% in and out — deposits split 8% reserve + 2% referrer reward.</p></div>
+          <div><strong>Taxes strengthen the pool</strong><p>10% in (8% reserve + 2% referrer); exits cost 30% for 90 days, then 10%.</p></div>
         </article>
         <article>
           <span className="value-index">02</span>

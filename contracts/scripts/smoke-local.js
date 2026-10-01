@@ -7,6 +7,10 @@ const { ethers } = require("hardhat");
 const DAILY_RATE_WAD = ethers.parseUnits("0.005", 18).toString();
 const DEPOSIT_TAX_BPS = 1000;
 const WITHDRAW_TAX_BPS = 1000;
+const EARLY_WITHDRAW_TAX_BPS = 3000;
+const WHALE_WITHDRAW_TAX_BPS = 3000;
+const WHALE_THRESHOLD = ethers.parseEther("2000000");
+const EARLY_PERIOD = 90 * 86400;
 const e = (n) => ethers.parseEther(n);
 const fmt = (n) => ethers.formatEther(BigInt(n));
 
@@ -36,7 +40,16 @@ async function main() {
   await token.waitForDeployment();
   const faucet = await (
     await ethers.getContractFactory("DripHFaucet")
-  ).deploy(token.target, DAILY_RATE_WAD, DEPOSIT_TAX_BPS, WITHDRAW_TAX_BPS);
+  ).deploy(
+    token.target,
+    DAILY_RATE_WAD,
+    DEPOSIT_TAX_BPS,
+    WITHDRAW_TAX_BPS,
+    EARLY_WITHDRAW_TAX_BPS,
+    WHALE_WITHDRAW_TAX_BPS,
+    WHALE_THRESHOLD,
+    EARLY_PERIOD
+  );
   await faucet.waitForDeployment();
   await (await token.setExcluded(faucet.target, true)).wait();
   await (await token.lockExclusion(faucet.target)).wait();
@@ -104,13 +117,20 @@ async function main() {
   const [o3] = await faucet.poolObligation();
   assertClose(o3, pendingBob, "outstanding after claim (bob remains owed)", "0.002");
 
-  console.log("\n-- alice withdraws 100 principal (10% tax stays in the pool) --");
+  console.log("\n-- alice withdraws 100 principal (day 60: 30% early-exit fee) --");
   const balBeforeW = await token.balanceOf(alice.address);
   const backingBeforeW = await token.balanceOf(faucet.target);
   await (await faucet.connect(alice).withdraw(e("100"))).wait();
   const netW = (await token.balanceOf(alice.address)) - balBeforeW;
-  assertClose(netW, e("90"), "net withdrawal (100 - 10% tax)");
+  assertClose(netW, e("70"), "net withdrawal (100 - 30% early fee)");
   assertClose(await token.balanceOf(faucet.target), BigInt(backingBeforeW) - BigInt(netW), "withdraw tax stays as backing");
+
+  console.log("\n-- past day 90: base 10% rate applies --");
+  await warp(provider, 31);
+  const balBeforeW2 = await token.balanceOf(alice.address);
+  await (await faucet.connect(alice).withdraw(e("100"))).wait();
+  const netW2 = (await token.balanceOf(alice.address)) - balBeforeW2;
+  assertClose(netW2, e("90"), "net withdrawal (100 - 10% base fee)");
 
   console.log("\n-- protocol summary --");
   console.log("  totalStakers     = " + (await faucet.totalStakers()).toString());
