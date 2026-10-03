@@ -29,7 +29,9 @@ async function main() {
   const chainId = Number((await ethers.provider.getNetwork()).chainId);
   const isLocal = chainId === 1337;
 
-  const ponsTokenInput = process.env.PONS_TOKEN_ADDRESS || null;
+  // Live DRIPH token on Robinhood mainnet: override with PONS_TOKEN_ADDRESS if needed.
+  const MAINNET_PONS_TOKEN = "0x6cBA2aC53Bd532678bD576bdfE9632C742B07edC";
+  const ponsTokenInput = process.env.PONS_TOKEN_ADDRESS || (chainId === 4663 ? MAINNET_PONS_TOKEN : null);
   const ponsTokenAddress =
     ponsTokenInput && ethers.isAddress(ponsTokenInput) && ponsTokenInput !== ethers.ZeroAddress
       ? ethers.getAddress(ponsTokenInput)
