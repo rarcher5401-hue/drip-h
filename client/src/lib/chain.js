@@ -52,11 +52,13 @@ export function getDeployment(chainId) {
     ? { token: ENV_TOKEN_ADDRESS, faucet: ENV_FAUCET_ADDRESS }
     : deployed?.deployments?.[String(id)];
 
-  if (!candidate || !validAddress(candidate.token) || !validAddress(candidate.faucet)) return null;
+  // Token-only deployments are valid while the faucet is still pending: the
+  // token address displays everywhere, faucet features stay gated.
+  if (!candidate || !validAddress(candidate.token)) return null;
   return {
     chainId: id,
     token: ethers.getAddress(candidate.token),
-    faucet: ethers.getAddress(candidate.faucet),
+    faucet: validAddress(candidate.faucet) ? ethers.getAddress(candidate.faucet) : null,
   };
 }
 

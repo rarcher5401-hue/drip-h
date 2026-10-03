@@ -115,6 +115,7 @@ export function Web3Provider({ children }) {
     const currentChainId = Number.parseInt(currentHex, 16);
     const currentDeployment = getDeployment(currentChainId);
     if (!currentDeployment) throw new Error("Drip H is not deployed on this network.");
+    if (!currentDeployment.faucet) throw new Error("The faucet is not deployed yet.");
 
     const browserProvider = new ethers.BrowserProvider(window.ethereum);
     const [tokenCode, faucetCode] = await Promise.all([

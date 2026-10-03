@@ -118,9 +118,9 @@ export default function Landing() {
 
       {noContract && (
         <div className="banner banner--warn">
-          <strong>Contracts not deployed yet.</strong> Deploy <code>DripHToken.sol</code> and{" "}
-          <code>DripHFaucet.sol</code> to Robinhood Chain testnet, then reload (see README). Or set{" "}
-          <code>VITE_CHAIN_ID</code>, <code>VITE_TOKEN_ADDRESS</code>, and <code>VITE_FAUCET_ADDRESS</code>.
+          <strong>Faucet not deployed yet.</strong> The DRIPH token is live — the faucet
+          contract is next, then reload (see README). Or set <code>VITE_CHAIN_ID</code>,{" "}
+          <code>VITE_TOKEN_ADDRESS</code>, and <code>VITE_FAUCET_ADDRESS</code>.
         </div>
       )}
 

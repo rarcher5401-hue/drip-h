@@ -12,6 +12,29 @@ export default function ContractLinks({ chainId }) {
     return <p className="hint small" style={{ margin: 0 }}>Contract addresses appear here after launch.</p>;
   }
 
+  if (!deployment.faucet) {
+    return (
+      <div className="contract-links">
+        <div className="contract-row" key="Token">
+          <span className="contract-tag">Token</span>
+          <code className="contract-addr" title={deployment.token}>{shortAddress(deployment.token, 6)}</code>
+          <span className="contract-btns">
+            <button type="button" className="link-btn" onClick={() => copy("Token", deployment.token)}>
+              {copied === "Token" ? "Copied ✓" : "Copy"}
+            </button>
+            <a className="link" href={`${explorer}/address/${deployment.token}`} target="_blank" rel="noreferrer">
+              View ↗
+            </a>
+          </span>
+        </div>
+        <div className="contract-row" key="Faucet">
+          <span className="contract-tag">Faucet</span>
+          <span className="muted small">deploying — address appears here</span>
+        </div>
+      </div>
+    );
+  }
+
   async function copy(label, value) {
     try {
       await navigator.clipboard.writeText(value);
